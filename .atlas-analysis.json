@@ -1,0 +1,90 @@
+{
+  "projectType": "saas",
+  "projectName": "LibraEase",
+  "projectDescription": "A full-stack library management system with role-based access for librarians and members, supporting book cataloging, checkout, and email notifications.",
+  "theme": "almond",
+  "primaryColor": "#22BC66",
+  "lightColor": "#d4f4e2",
+  "darkColor": "#16803f",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart"]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/authentication",
+              "features/book-management",
+              "features/checkout",
+              "features/email-notifications"
+            ]
+          },
+          {
+            "group": "Roles & Permissions",
+            "pages": ["roles/overview", "roles/librarian", "roles/member"]
+          },
+          {
+            "group": "Configuration",
+            "pages": ["configuration/environment-variables", "configuration/database"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": ["api/auth/signup", "api/auth/login", "api/auth/signout", "api/auth/email"]
+          },
+          {
+            "group": "Books",
+            "pages": [
+              "api/books/add-book",
+              "api/books/get-books",
+              "api/books/get-all-books",
+              "api/books/update-book",
+              "api/books/delete-book"
+            ]
+          },
+          {
+            "group": "Checkout",
+            "pages": ["api/checkout/checkout", "api/checkout/checkout-details"]
+          },
+          {
+            "group": "Email",
+            "pages": ["api/email/get-due-date", "api/email/get-borrow-details"]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Role-based access control with librarian, member, and admin roles",
+    "Book catalog management — add, update, delete, and search books",
+    "Member checkout system with configurable return dates",
+    "Automated email notifications on checkout via Nodemailer and Mailgen",
+    "JWT-based authentication with cookie sessions",
+    "React + MUI frontend with protected routes per role",
+    "MongoDB data persistence with Mongoose schemas"
+  ],
+  "publicApiSurface": [
+    "POST /signup",
+    "POST /login",
+    "POST /signout",
+    "POST /email",
+    "POST /book/addbook",
+    "POST /book/getbooks",
+    "POST /book/getallbooks",
+    "POST /book/updatebook",
+    "POST /book/deletebook",
+    "POST /book/checkout",
+    "POST /book/checkouttt",
+    "POST /api/getDueDate",
+    "POST /api/getBorrowDetails"
+  ]
+}
