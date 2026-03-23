@@ -3,19 +3,31 @@ title: Database
 description: MongoDB connection setup, Mongoose schema reference for all three LibraEase collections, and instructions for connecting to a local instance or MongoDB Atlas.
 ---
 
-LibraEase uses MongoDB as its database, accessed through the Mongoose ODM. The backend connects on startup using the `MONGO_URI` environment variable. Three collections store all application data: `login` (users), `Book` (catalog), and `Checkout` (borrow records).
+LibraEase uses MongoDB as its database, accessed through the Mongoose ODM. The backend connects on startup using the `DB_URL` and `DB_NAME` environment variables. Three collections store all application data: `login` (users), `Book` (catalog), and `Checkout` (borrow records).
 
 ## Connection setup
 
-The backend calls `connectDB()` at startup, which establishes the Mongoose connection using `process.env.MONGO_URI`:
+The backend calls `connectDB()` at startup, which establishes the Mongoose connection using `process.env.DB_URL` and `process.env.DB_NAME`:
 
 ```js
 // config/db.js
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 const connectDB = async () => {
-  await mongoose.connect(process.env.MONGO_URI);
-  console.log('MongoDB connected');
+    try {
+        const conn = await mongoose.connect(process.env.DB_URL, {
+            dbName: process.env.DB_NAME,
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        console.log(`MongoDB Connected: ${conn.connection.host}`);
+    } catch (error) {
+        console.error(`Error: ${error.message}`);
+        process.exit(1);
+    }
 };
 
 module.exports = connectDB;
@@ -28,16 +40,18 @@ If the connection fails, the process exits immediately — the server will not s
 **Local MongoDB instance:**
 
 ```ini
-MONGO_URI=mongodb://localhost:27017/libraease
+DB_URL=mongodb://localhost:27017
+DB_NAME=libraease
 ```
 
 **MongoDB Atlas cluster:**
 
 ```ini
-MONGO_URI=mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/libraease?retryWrites=true&w=majority
+DB_URL=mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net
+DB_NAME=libraease
 ```
 
-Replace `<username>`, `<password>`, and the cluster hostname with the values from your Atlas project. The database name (`libraease`) is appended after the hostname.
+Replace `<username>`, `<password>`, and the cluster hostname with the values from your Atlas project.
 
 ## Connecting to MongoDB Atlas
 
@@ -69,15 +83,16 @@ Replace `<username>`, `<password>`, and the cluster hostname with the values fro
     mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/?retryWrites=true&w=majority
     ```
 
-    Replace `<username>` and `<password>` with the database user credentials you created, then append `/libraease` before the `?` to target the correct database:
-
-    ```ini
-    MONGO_URI=mongodb+srv://myuser:mypassword@cluster0.abcde.mongodb.net/libraease?retryWrites=true&w=majority
-    ```
+    Replace `<username>` and `<password>` with the database user credentials you created. You will use this as `DB_URL` in `backend/.env`.
   </Step>
 
   <Step title="Update backend/.env">
-    Paste the completed connection string as the value of `MONGO_URI` in `backend/.env`, then restart the backend server. You should see `MongoDB connected` in the terminal output.
+    Set `DB_URL` to the Atlas connection string and `DB_NAME` to your database name in `backend/.env`, then restart the backend server. You should see `MongoDB Connected: cluster0.abcde.mongodb.net` in the terminal output.
+
+    ```ini
+    DB_URL=mongodb+srv://myuser:mypassword@cluster0.abcde.mongodb.net
+    DB_NAME=libraease
+    ```
   </Step>
 </Steps>
 
@@ -96,8 +111,8 @@ Collection name: `login`
 | `password` | `String` | Required | bcrypt-hashed password |
 | `role` | `String` | Enum: `member`, `librarian`, `admin`; default: `member` | Determines access level |
 | `address` | `String` | Required | Street address of the member |
-| `pincode` | `String` | Required | Postal / ZIP code |
-| `phone` | `String` | Required | Contact phone number |
+| `pincode` | `Number` | Required | Postal / ZIP code |
+| `phone` | `Number` | Required | Contact phone number |
 
 <Note>
   Both `username` and `email` have a unique index. Attempting to sign up with a duplicate username or email returns an error from the backend before the document is written.
@@ -113,10 +128,10 @@ Collection name: `Book`
 | `title` | `String` | Required | Book title |
 | `author` | `String` | Required | Author name |
 | `publisher` | `String` | Required | Publisher name |
-| `year` | `String` | Required | Year of publication |
+| `year` | `Number` | Required | Year of publication |
 | `genre` | `String` | Required | Genre or category |
 | `quantity` | `Number` | Required | Number of copies available |
-| `images` | `String` | — | URL or path to cover image |
+| `images` | `Array` | — | Array of base64-encoded image data URLs |
 | `createdBy` | `ObjectId` | Ref: `login` | ID of the librarian who added the book |
 
 <Note>
@@ -159,10 +174,11 @@ mongod --dbpath /data/db
 mongod --dbpath C:\data\db
 ```
 
-With `mongod` running, set your connection string to:
+With `mongod` running, set your connection variables to:
 
 ```ini
-MONGO_URI=mongodb://localhost:27017/libraease
+DB_URL=mongodb://localhost:27017
+DB_NAME=libraease
 ```
 
 MongoDB will create the `libraease` database automatically the first time a document is written.

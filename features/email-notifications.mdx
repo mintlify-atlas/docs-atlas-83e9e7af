@@ -47,8 +47,8 @@ SECRET_KEY=your-jwt-secret
 ## How the mailer is configured
 
 ```js
-import nodemailer from 'nodemailer';
-import Mailgen from 'mailgen';
+const nodemailer = require('nodemailer');
+const Mailgen = require('mailgen');
 
 const config = {
   service: 'gmail',
@@ -71,23 +71,25 @@ const MailGenerator = new Mailgen({
 
 The `transporter` is called inside the `checkout` controller after the checkout document is saved successfully. If the email send fails, the checkout record is already persisted — the email failure does not roll back the transaction.
 
-## Borrow detail endpoints
+## Email utility endpoints
+
+Two dedicated endpoints under `/api` can be called to trigger targeted emails to a specific member:
 
 <Tip>
-  Use the `/getDueDate` and `/getBorrowDetails` endpoints to build reminder features or overdue notifications without querying the checkout collection directly.
+  Both endpoints accept a `userEmail` body parameter and send a formatted HTML email. They do not return data — they trigger email delivery.
 </Tip>
 
 ```http
-POST /api/email/getDueDate
+POST /api/getDueDate
 ```
 
-Returns the due date for a specific borrow record. Useful for sending due-date reminders or displaying countdowns in the member portal.
+Sends a **due-date reminder email** to the specified member. The email lists their checked-out books and warns that a charge of 10 Rs per day applies for overdue returns.
 
 ```http
-POST /api/email/getBorrowDetails
+POST /api/getBorrowDetails
 ```
 
-Returns the full borrow record for a member, including all items, their checkout dates, return dates, and fine amounts.
+Sends a **borrow summary email** to the specified member. The email includes a table of all borrowed books with title, author, ISBN, and due date.
 
 ## Troubleshooting
 

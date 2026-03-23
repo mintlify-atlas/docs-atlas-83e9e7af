@@ -21,7 +21,8 @@ Create a `.env` file in the `backend/` directory and set every variable listed b
 | `PASSWORD_KEY` | bcrypt salt rounds — controls how expensive password hashing is | `10` |
 | `EMAIL` | Gmail address used by Nodemailer to send emails | `you@gmail.com` |
 | `PASSWORD` | Gmail App Password for the address above | `xxxx xxxx xxxx xxxx` |
-| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/libraease` |
+| `DB_URL` | MongoDB connection string (without database name) | `mongodb://localhost:27017` |
+| `DB_NAME` | Name of the MongoDB database to use | `libraease` |
 
 <Note>
   `PASSWORD_KEY` is passed directly to `bcrypt.hash()` as the number of salt rounds. A value between `10` and `12` is recommended — lower values are faster but less secure; higher values are more secure but noticeably slow at signup and login.
@@ -47,7 +48,8 @@ EMAIL=you@gmail.com
 PASSWORD=xxxx xxxx xxxx xxxx
 
 # Database
-MONGO_URI=mongodb://localhost:27017/libraease
+DB_URL=mongodb://localhost:27017
+DB_NAME=libraease
 ```
 
 ## Frontend variables

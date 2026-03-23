@@ -83,17 +83,19 @@ The React frontend guards routes based on the `role` value returned by `/email`.
 
 ## Token header pattern
 
-For API calls that require authentication, the React frontend reads the token from the cookie or local state and sends it in the request headers:
+For API calls that require authentication, the React frontend reads the token from `localStorage` and sends it as the `token` header:
 
 ```js
-const response = await axios.get('/api/email', {
+const response = await fetch('/email', {
+  method: 'POST',
   headers: {
-    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'token': localStorage.getItem('token'),
   },
 });
 ```
 
-The `tokenverification` middleware on the Express side extracts and verifies this header on every protected request.
+The `tokenverification` middleware on the Express side reads `req.headers.token` — not the standard `Authorization` header — and verifies it against `SECRET_KEY`. All `/book/*` routes are protected this way.
 
 ## Login and signup forms
 

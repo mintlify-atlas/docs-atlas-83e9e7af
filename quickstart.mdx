@@ -54,14 +54,15 @@ description: 'Get LibraEase running locally in under ten minutes. You will start
 
     # Authentication
     SECRET_KEY=your_jwt_secret_key_here
-    PASSWORD_KEY=your_bcrypt_password_salt_here
+    PASSWORD_KEY=10
 
     # Email (nodemailer + mailgen)
     EMAIL=your_gmail_address@gmail.com
     PASSWORD=your_gmail_app_password
 
     # Database
-    MONGO_URI=mongodb://localhost:27017/libraease
+    DB_URL=mongodb://localhost:27017
+    DB_NAME=libraease
     ```
 
     <Warning>

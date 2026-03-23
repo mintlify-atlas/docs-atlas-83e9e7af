@@ -22,13 +22,14 @@ Members can borrow one or more books in a single checkout session. The backend r
     The frontend posts the checkout request with the full list of items:
 
     ```json
-    POST /api/books/checkout
+    POST /book/checkout
 
     {
       "books": [
         { "isbn": "978-0-06-112008-4", "quantity": 1, "returnDate": 14 },
         { "isbn": "978-0-7432-7356-5", "quantity": 2, "returnDate": 7 }
-      ]
+      ],
+      "alldetails": [...]
     }
     ```
   </Step>
@@ -79,7 +80,7 @@ This means the API never receives or stores raw day counts — only concrete dat
 Librarians can retrieve every checkout record in the system:
 
 ```http
-GET /api/books/checkouttt
+POST /book/checkouttt
 ```
 
 ```json

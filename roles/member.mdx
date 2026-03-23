@@ -35,12 +35,21 @@ When a member checks out a book, the backend creates a checkout record linked to
 POST /book/checkout
 
 {
-  "bookIsbn": "978-0-06-112008-4",
-  "returnInDays": 14
+  "books": [
+    { "isbn": "978-0-06-112008-4", "quantity": 1, "returnDate": 14 }
+  ],
+  "alldetails": [
+    {
+      "isbn": "978-0-06-112008-4",
+      "title": "To Kill a Mockingbird",
+      "author": "Harper Lee",
+      "checkoutDetails": { "quantity": 1, "days": 14 }
+    }
+  ]
 }
 ```
 
-`returnInDays` is a number representing how many days from today the member intends to return the book. The backend calculates and stores the actual return date.
+`returnDate` in each `books` item is the number of days from today. The backend converts it to a concrete ISO date string before saving the record. `alldetails` is used to generate the checkout confirmation email.
 
 After a successful checkout, an email notification is sent to the member's registered email address with the book title, borrow date, and return date.
 
@@ -74,8 +83,10 @@ After a successful checkout, an email notification is sent to the member's regis
     POST /book/checkout
 
     {
-      "bookIsbn": "978-0-06-112008-4",
-      "returnInDays": 14
+      "books": [
+        { "isbn": "978-0-06-112008-4", "quantity": 1, "returnDate": 14 }
+      ],
+      "alldetails": [{ "isbn": "...", "title": "...", "author": "...", "checkoutDetails": { "quantity": 1, "days": 14 } }]
     }
     ```
   </Step>

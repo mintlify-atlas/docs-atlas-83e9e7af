@@ -1,92 +1,58 @@
 ---
-title: 'Get borrow details'
-description: 'Retrieve the full borrow history and item-level details for a user.'
+title: 'Send borrow details email'
+description: 'Send a borrowing summary email to a library member listing the books they have borrowed.'
 ---
 
 <Note>
-  This is a utility endpoint. It does **not** require an authentication token
-  because it is mounted before the token-verification middleware in `index.js`.
+  This endpoint does **not** require an authentication token. It is mounted before the token-verification middleware in `index.js` under the `/api` prefix.
 </Note>
 
 `POST /api/getBorrowDetails`
 
-Returns the borrow history for a user, including all checked-out items with their ISBNs, quantities, checkout dates, return dates, return status, and any outstanding fines. This endpoint is used to populate detailed borrowing-summary emails.
+Sends an HTML summary email to the specified address using Nodemailer and Mailgen. The email includes a table of the member's borrowed books with title, author, ISBN, and due date. Members are reminded to return books by the due dates and can click through to their account.
+
+<Warning>
+  This endpoint sends a real email. Ensure `EMAIL` and `PASSWORD` are correctly configured in `backend/.env` before calling this endpoint. See [environment variables](/configuration/environment-variables) for setup instructions.
+</Warning>
 
 ## Body
 
-<ParamField body="userId" type="string" required>
-  ObjectId of the user whose borrow history you want to retrieve.
+<ParamField body="userEmail" type="string" required>
+  The email address of the library member to send the borrow summary to.
 </ParamField>
 
 ## Response
 
-<ResponseField name="borrowDetails" type="object[]">
-  Array of checkout records belonging to the user.
-
-  <Expandable title="borrow record properties">
-    <ResponseField name="_id" type="string">
-      Unique MongoDB identifier for the checkout record.
-    </ResponseField>
-
-    <ResponseField name="items" type="object[]">
-      All book items included in this checkout.
-
-      <Expandable title="item properties">
-        <ResponseField name="isbn" type="string" required>
-          ISBN of the borrowed book.
-        </ResponseField>
-
-        <ResponseField name="quantity" type="number" required>
-          Number of copies borrowed.
-        </ResponseField>
-
-        <ResponseField name="checkoutDate" type="string" required>
-          ISO 8601 date-time string for when the checkout occurred.
-        </ResponseField>
-
-        <ResponseField name="returnDate" type="string" required>
-          Return due date in `YYYY-MM-DD` format.
-        </ResponseField>
-
-        <ResponseField name="returned" type="boolean">
-          Whether this item has been returned.
-        </ResponseField>
-
-        <ResponseField name="fines" type="number">
-          Outstanding fine amount for this item. `0` if none.
-        </ResponseField>
-      </Expandable>
-    </ResponseField>
-  </Expandable>
+<ResponseField name="msg" type="string">
+  Confirmation message: `"you should receive an email"`.
 </ResponseField>
 
 ### Error responses
 
 | Status | Description |
 | ------ | ----------- |
-| `400`  | `userId` is missing or not a valid ObjectId. |
-| `404`  | No borrow records found for the given user. |
-| `500`  | Unexpected server error. |
+| `201`  | Email sent successfully. |
+| `500`  | Failed to send email — check Nodemailer configuration. |
 
 <CodeGroup>
 
 ```bash cURL
 curl --request POST \
-  --url https://api.libraease.com/api/getBorrowDetails \
+  --url http://localhost:5000/api/getBorrowDetails \
   --header 'Content-Type: application/json' \
   --data '{
-  "userId": "663f0a1b2c3d4e5f6a7b8c9d"
+  "userEmail": "member@example.com"
 }'
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.libraease.com/api/getBorrowDetails', {
+const response = await fetch('http://localhost:5000/api/getBorrowDetails', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    userId: '663f0a1b2c3d4e5f6a7b8c9d',
+    userEmail: 'member@example.com',
   }),
 });
 
@@ -95,36 +61,14 @@ const data = await response.json();
 
 </CodeGroup>
 
-```json 200 — success
+```json 201 — success
 {
-  "borrowDetails": [
-    {
-      "_id": "664a1f2e3c4b5d6e7f8a9b0c",
-      "items": [
-        {
-          "isbn": "978-0-06-112008-4",
-          "quantity": 1,
-          "checkoutDate": "2026-03-20T10:15:00.000Z",
-          "returnDate": "2026-04-03",
-          "returned": false,
-          "fines": 0
-        },
-        {
-          "isbn": "978-0-7432-7356-5",
-          "quantity": 2,
-          "checkoutDate": "2026-03-20T10:15:00.000Z",
-          "returnDate": "2026-03-27",
-          "returned": true,
-          "fines": 0
-        }
-      ]
-    }
-  ]
+  "msg": "you should receive an email"
 }
 ```
 
-```json 404 — not found
+```json 500 — email send failure
 {
-  "message": "No borrow records found for this user."
+  "error": { ... }
 }
 ```
