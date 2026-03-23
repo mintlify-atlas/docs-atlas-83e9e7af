@@ -1,0 +1,108 @@
+---
+title: Librarian role
+description: Everything a librarian can do in LibraEase — managing the book catalog, using the dashboard, and calling book API endpoints.
+---
+
+Librarians are responsible for managing the book catalog. Each librarian owns the books they add — they can view, update, and delete only their own records. Members, by contrast, can browse the complete catalog from all librarians.
+
+## Available frontend routes
+
+| Route | Description |
+|---|---|
+| `/dashboard` | View and delete all books added by the logged-in librarian. |
+| `/addbook` | Form to add a new book to the catalog. |
+| `/updatebook` | Search by ISBN and edit an existing book's details. |
+
+Routes that are not listed above (such as `/checkout` and `/checkoutdetails`) redirect away for librarian accounts and are not accessible.
+
+## Available API endpoints
+
+All book endpoints require a valid JWT sent in the request headers. The `tokenverification` middleware extracts `userId` from the token and attaches it to `req.userId`.
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/book/addbook` | POST | Add a new book. Sets `createdBy` to `req.userId` automatically. |
+| `/book/getbooks` | POST | Return only the books created by the logged-in librarian. |
+| `/book/updatebook` | POST | Update a book by ISBN. |
+| `/book/deletebook` | POST | Delete a book by ISBN. |
+
+<Note>
+  `getbooks` filters by `createdBy: req.userId`, so each librarian sees only their own books on the dashboard. To retrieve the full catalog (all books from all librarians), use `getallbooks` — the endpoint members use when browsing.
+</Note>
+
+## Book form fields
+
+When adding or updating a book via the `BookDetailsForm`, the following fields are available:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `isbn` | String | Yes | Unique identifier. Used as the key for update and delete operations. |
+| `title` | String | Yes | Full title of the book. |
+| `author` | String | Yes | Author name(s). |
+| `publisher` | String | Yes | Publishing house or organization. |
+| `year` | Number | Yes | Year of publication. |
+| `genre` | String | Yes | Category (e.g., Fiction, Science, History). |
+| `quantity` | Number | Yes | Number of available copies. |
+| `images` | Array | No | One or more URLs pointing to book cover images. |
+
+## Typical librarian workflow
+
+<Steps>
+  <Step title="Sign up as a librarian">
+    On the signup form, select `librarian` as your role. Fill in the required fields: `username`, `email`, `password`, `address`, `pincode`, and `phone`.
+
+    After signing up, log in to receive your JWT. The token is stored as an HTTP-only cookie and used to authenticate all subsequent API calls.
+  </Step>
+
+  <Step title="Add a book">
+    Navigate to `/addbook`. Fill in the `BookDetailsForm` with the book's ISBN, title, author, publisher, year, genre, quantity, and optional cover images.
+
+    On submit, the frontend posts to `POST /book/addbook`. The backend creates the record with `createdBy` set to your user ID.
+
+    ```json
+    POST /book/addbook
+
+    {
+      "isbn": "978-0-06-112008-4",
+      "title": "To Kill a Mockingbird",
+      "author": "Harper Lee",
+      "publisher": "J. B. Lippincott & Co.",
+      "year": 1960,
+      "genre": "Fiction",
+      "quantity": 5,
+      "images": ["https://example.com/covers/mockingbird.jpg"]
+    }
+    ```
+  </Step>
+
+  <Step title="Update a book">
+    Navigate to `/updatebook` and search by ISBN. The form pre-fills with the existing record. Edit any fields you need to change and submit.
+
+    The backend locates the document by `isbn` and applies your changes using `$set`.
+
+    ```json
+    POST /book/updatebook
+
+    {
+      "isbn": "978-0-06-112008-4",
+      "quantity": 8
+    }
+    ```
+  </Step>
+
+  <Step title="Manage your catalog">
+    From `/dashboard`, your full book list is loaded via `POST /book/getbooks`. You can delete any book you own directly from this view.
+
+    To remove a book, the frontend sends:
+
+    ```json
+    POST /book/deletebook
+
+    { "isbn": "978-0-06-112008-4" }
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+  Keep ISBNs accurate — they are the primary key used for all update and delete operations. Entering an incorrect ISBN during `addbook` will require deleting and re-adding the record.
+</Tip>

@@ -1,0 +1,90 @@
+---
+title: Environment variables
+description: All environment variables required to run the LibraEase backend and frontend, with descriptions, expected values, and example files.
+---
+
+LibraEase reads configuration from `.env` files in the `backend/` and `frontend/` directories. Neither file is committed to version control — you must create both manually before starting the servers.
+
+<Warning>
+  Never commit `.env` files to version control. They contain secrets such as your JWT signing key, bcrypt salt, and Gmail App Password. Add both `backend/.env` and `frontend/.env` to your `.gitignore` before your first commit.
+</Warning>
+
+## Backend variables
+
+Create a `.env` file in the `backend/` directory and set every variable listed below.
+
+| Variable | Description | Example |
+|---|---|---|
+| `PORT` | Port the Express server listens on | `5000` |
+| `baseUrl` | Base URL for the server (used in startup log) | `http://localhost` |
+| `SECRET_KEY` | Secret used to sign and verify JWT tokens | `your-super-secret-key` |
+| `PASSWORD_KEY` | bcrypt salt rounds — controls how expensive password hashing is | `10` |
+| `EMAIL` | Gmail address used by Nodemailer to send emails | `you@gmail.com` |
+| `PASSWORD` | Gmail App Password for the address above | `xxxx xxxx xxxx xxxx` |
+| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/libraease` |
+
+<Note>
+  `PASSWORD_KEY` is passed directly to `bcrypt.hash()` as the number of salt rounds. A value between `10` and `12` is recommended — lower values are faster but less secure; higher values are more secure but noticeably slow at signup and login.
+</Note>
+
+<Tip>
+  `EMAIL` and `PASSWORD` require a Gmail account with **2-Step Verification** enabled. You cannot use your regular account password here. Generate a 16-character App Password at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), then paste it (with or without spaces) as the value for `PASSWORD`.
+</Tip>
+
+### Full example: `backend/.env`
+
+```ini backend/.env
+# Server
+PORT=5000
+baseUrl=http://localhost
+
+# Authentication
+SECRET_KEY=replace-this-with-a-long-random-string
+PASSWORD_KEY=10
+
+# Email (Nodemailer + Mailgen)
+EMAIL=you@gmail.com
+PASSWORD=xxxx xxxx xxxx xxxx
+
+# Database
+MONGO_URI=mongodb://localhost:27017/libraease
+```
+
+## Frontend variables
+
+Create a `.env` file in the `frontend/` directory. Vite only exposes variables prefixed with `VITE_` to the browser bundle — any variable without this prefix is silently ignored at runtime.
+
+| Variable | Description | Example |
+|---|---|---|
+| `VITE_API_URL` | Base URL of the Express backend — no trailing slash | `http://localhost:5000` |
+
+### Full example: `frontend/.env`
+
+```ini frontend/.env
+# Backend API base URL — no trailing slash
+VITE_API_URL=http://localhost:5000
+```
+
+## Referencing variables in code
+
+The backend accesses variables via `process.env`:
+
+```js
+// Server startup
+app.listen(process.env.PORT, () => {
+  console.log(`Server is Running on ${process.env.baseUrl} at ${process.env.PORT}`);
+});
+
+// Password hashing
+password: await bcrypt.hash(req.body.password, Number(process.env.PASSWORD_KEY))
+
+// JWT signing
+let token = jwt.sign({ email: check._id }, process.env.SECRET_KEY);
+```
+
+The frontend accesses `VITE_API_URL` via `import.meta.env`:
+
+```js
+const apiUrl = import.meta.env.VITE_API_URL;
+// e.g. "http://localhost:5000"
+```

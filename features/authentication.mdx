@@ -1,0 +1,103 @@
+---
+title: Authentication
+description: How LibraEase handles user signup, login, JWT-based session management, and signout for members and librarians.
+---
+
+LibraEase uses JSON Web Tokens (JWT) stored in HTTP-only cookies to manage authentication. Two roles exist: `member` and `librarian`. Each role controls access to different parts of the application.
+
+## Auth flow
+
+<Steps>
+  <Step title="Sign up">
+    Submit the signup form with the required fields. The backend validates all inputs, hashes the password with bcrypt, and stores the new user in the `login` collection.
+
+    **Required fields:**
+    - `username`
+    - `email`
+    - `password`
+    - `confirmpassword`
+    - `role` — either `"member"` or `"librarian"`
+    - `address`
+    - `pincode`
+    - `phone`
+
+    On success the API returns:
+
+    ```json
+    { "message": "Signed up Succesfully", "okk": true }
+    ```
+  </Step>
+
+  <Step title="Log in">
+    Submit your email and password. The backend looks up the account by email, compares the bcrypt hash, and — if valid — signs a JWT using `process.env.SECRET_KEY`.
+
+    The token is returned both in the response body and set as an HTTP-only cookie:
+
+    ```http
+    Set-Cookie: token=<jwt>; Max-Age=1000000; HttpOnly
+    ```
+
+    The JSON response:
+
+    ```json
+    { "token": "<jwt>", "okk": true, "message": "Logined Succesfully" }
+    ```
+  </Step>
+
+  <Step title="Token verification on protected routes">
+    Every protected API route runs the `tokenverification` middleware before the handler executes. The middleware reads the JWT from the incoming request headers, verifies it against `SECRET_KEY`, and attaches the decoded payload to the request object. Requests with a missing or invalid token are rejected before reaching the controller.
+  </Step>
+
+  <Step title="Fetch current user info">
+    The frontend calls the `/email` endpoint — passing the stored token in the request headers — to retrieve the logged-in user's `email` and `role`.
+
+    ```json
+    { "email": "user@example.com", "role": "member", "okk": true }
+    ```
+
+    This response is used to conditionally render role-specific UI (e.g., showing the librarian dashboard vs. the member catalog).
+  </Step>
+
+  <Step title="Sign out">
+    Calling the signout endpoint immediately expires the cookie:
+
+    ```http
+    Set-Cookie: token=; Expires=<now>
+    ```
+
+    The session is terminated on the server side — no additional client action is required.
+  </Step>
+</Steps>
+
+## Frontend route protection
+
+The React frontend guards routes based on the `role` value returned by `/email`. Members are redirected away from librarian-only pages (such as `/addbook` and `/updatebook`), and unauthenticated users are sent to the login screen.
+
+```jsx
+// Example protected route wrapper
+<Route
+  path="/dashboard"
+  element={isAuthenticated ? <Dashboard role={role} /> : <Navigate to="/login" />}
+/>
+```
+
+## Token header pattern
+
+For API calls that require authentication, the React frontend reads the token from the cookie or local state and sends it in the request headers:
+
+```js
+const response = await axios.get('/api/email', {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
+```
+
+The `tokenverification` middleware on the Express side extracts and verifies this header on every protected request.
+
+## Login and signup forms
+
+Both forms live on the same React page and toggle between signup and login views. After a successful login the frontend stores the returned token, calls `/email` to confirm the user's role, then redirects to the appropriate landing page:
+
+- **Member** → book catalog
+- **Librarian** → `/dashboard`

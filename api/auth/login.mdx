@@ -1,0 +1,105 @@
+---
+title: 'Log in'
+description: 'Authenticate a user and receive a session token via HTTP-only cookie.'
+---
+
+Validates the user's credentials, signs a JWT, and sets it as an HTTP-only cookie on the response. The token is also returned in the response body for clients that cannot access cookies directly.
+
+<Note>
+  The email lookup is case-insensitive because addresses are stored in lowercase at signup.
+</Note>
+
+## Request
+
+<ParamField body="email" type="string" required>
+  The email address used when the account was created.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The account password.
+</ParamField>
+
+## Response
+
+<ResponseField name="token" type="string">
+  Signed JWT. Only present when `okk` is `true`. The same token is set as the `token` cookie (`httpOnly`, `maxAge: 1000000`).
+</ResponseField>
+
+<ResponseField name="okk" type="boolean" required>
+  `true` on successful authentication; `false` for all failure cases.
+</ResponseField>
+
+<ResponseField name="message" type="string" required>
+  Human-readable status message.
+</ResponseField>
+
+## Code examples
+
+<CodeGroup>
+
+```bash curl
+curl --request POST \
+  --url https://api.libraease.com/login \
+  --header 'Content-Type: application/json' \
+  --cookie-jar cookies.txt \
+  --data '{
+    "email": "jsmith@example.com",
+    "password": "s3cur3P@ss"
+  }'
+```
+
+```javascript fetch
+const response = await fetch('https://api.libraease.com/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include', // required to store the cookie
+  body: JSON.stringify({
+    email: 'jsmith@example.com',
+    password: 's3cur3P@ss',
+  }),
+});
+
+const data = await response.json();
+console.log(data.token);
+```
+
+</CodeGroup>
+
+## Response examples
+
+<CodeGroup>
+
+```json 200 Success
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "okk": true,
+  "message": "Logined Succesfully"
+}
+```
+
+```json 200 Wrong credentials
+{
+  "message": "email or password is wrong",
+  "okk": false
+}
+```
+
+```json 200 Email not found
+{
+  "message": "no email found",
+  "okk": false
+}
+```
+
+```json 400 Server error
+{
+  "message": "error",
+  "okk": false
+}
+```
+
+</CodeGroup>
+
+<Warning>
+  All failure cases except server errors return HTTP `200`. Always check `okk` rather than relying on the HTTP status code alone.
+</Warning>

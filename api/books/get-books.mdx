@@ -1,0 +1,115 @@
+---
+title: 'Get books'
+description: "Retrieve all books added by the authenticated librarian. Returns only the librarian's own catalog entries."
+---
+
+Returns all books that were added by the currently authenticated librarian. This is scoped to the authenticated user — books added by other librarians are not included.
+
+<Note>
+  To retrieve every book in the system regardless of who added it, use the [Get all books](/api/books/get-all-books) endpoint instead.
+</Note>
+
+## Authentication
+
+<Note>
+  This endpoint requires a valid JWT token passed in the request header as `token: <jwt-token>`. If the token is missing or invalid, the request will be rejected before reaching the controller.
+</Note>
+
+<ParamField header="token" type="string" required>
+  JWT token issued at login. Used to identify which librarian's books to return.
+</ParamField>
+
+## Request
+
+No request body is required. The authenticated user's identity is derived from the JWT token.
+
+## Response
+
+<ResponseField name="data" type="object[]">
+  Array of book objects belonging to the authenticated librarian. Internal fields (`_id`, `createdBy`, `__v`) are excluded from each object.
+
+  <Expandable title="Book object properties">
+    <ResponseField name="isbn" type="string">
+      International Standard Book Number.
+    </ResponseField>
+    <ResponseField name="title" type="string">
+      Title of the book.
+    </ResponseField>
+    <ResponseField name="author" type="string">
+      Name of the book's author.
+    </ResponseField>
+    <ResponseField name="publisher" type="string">
+      Name of the publisher.
+    </ResponseField>
+    <ResponseField name="year" type="number">
+      Year the book was published.
+    </ResponseField>
+    <ResponseField name="genre" type="string">
+      Genre or category of the book.
+    </ResponseField>
+    <ResponseField name="quantity" type="number">
+      Number of copies available.
+    </ResponseField>
+    <ResponseField name="images" type="string[]">
+      Array of image URLs or base64-encoded strings for the book.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="okk" type="boolean">
+  `true` if the operation succeeded, `false` if it failed.
+</ResponseField>
+
+## Code examples
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  --url https://api.libraease.com/book/getbooks \
+  --header 'token: <jwt-token>'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.libraease.com/book/getbooks', {
+  method: 'POST',
+  headers: {
+    'token': '<jwt-token>',
+  },
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+## Response examples
+
+<CodeGroup>
+
+```json 200 Success
+{
+  "data": [
+    {
+      "isbn": "978-3-16-148410-0",
+      "title": "The Great Gatsby",
+      "author": "F. Scott Fitzgerald",
+      "publisher": "Scribner",
+      "year": 1925,
+      "genre": "Fiction",
+      "quantity": 5,
+      "images": ["https://example.com/covers/great-gatsby.jpg"]
+    }
+  ],
+  "okk": true
+}
+```
+
+```json 500 Server error
+{
+  "message": "Error getting books"
+}
+```
+
+</CodeGroup>

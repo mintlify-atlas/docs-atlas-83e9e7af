@@ -1,0 +1,168 @@
+---
+title: Database
+description: MongoDB connection setup, Mongoose schema reference for all three LibraEase collections, and instructions for connecting to a local instance or MongoDB Atlas.
+---
+
+LibraEase uses MongoDB as its database, accessed through the Mongoose ODM. The backend connects on startup using the `MONGO_URI` environment variable. Three collections store all application data: `login` (users), `Book` (catalog), and `Checkout` (borrow records).
+
+## Connection setup
+
+The backend calls `connectDB()` at startup, which establishes the Mongoose connection using `process.env.MONGO_URI`:
+
+```js
+// config/db.js
+const mongoose = require('mongoose');
+
+const connectDB = async () => {
+  await mongoose.connect(process.env.MONGO_URI);
+  console.log('MongoDB connected');
+};
+
+module.exports = connectDB;
+```
+
+If the connection fails, the process exits immediately — the server will not start without a valid database connection.
+
+## Connection string examples
+
+**Local MongoDB instance:**
+
+```ini
+MONGO_URI=mongodb://localhost:27017/libraease
+```
+
+**MongoDB Atlas cluster:**
+
+```ini
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/libraease?retryWrites=true&w=majority
+```
+
+Replace `<username>`, `<password>`, and the cluster hostname with the values from your Atlas project. The database name (`libraease`) is appended after the hostname.
+
+## Connecting to MongoDB Atlas
+
+<Steps>
+  <Step title="Create a free Atlas account">
+    Go to [cloud.mongodb.com](https://cloud.mongodb.com) and sign up or log in. Create a new project for LibraEase.
+  </Step>
+
+  <Step title="Deploy a free cluster">
+    Inside your project, click **Create** and choose the **M0 Free** tier. Select any cloud provider and region closest to your deployment target.
+  </Step>
+
+  <Step title="Create a database user">
+    Navigate to **Database Access** and click **Add New Database User**. Choose **Password** authentication, enter a username and strong password, and grant the **Read and write to any database** built-in role.
+
+    <Warning>
+      Store the password securely. You will need it in the connection string. Do not reuse a password from another service.
+    </Warning>
+  </Step>
+
+  <Step title="Allowlist your IP address">
+    Navigate to **Network Access** and click **Add IP Address**. Add your current IP, or enter `0.0.0.0/0` to allow connections from anywhere (suitable for development; restrict this in production).
+  </Step>
+
+  <Step title="Get the connection string">
+    From the **Database** overview page, click **Connect** on your cluster, then choose **Drivers**. Select **Node.js** and copy the connection string. It will look like:
+
+    ```
+    mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/?retryWrites=true&w=majority
+    ```
+
+    Replace `<username>` and `<password>` with the database user credentials you created, then append `/libraease` before the `?` to target the correct database:
+
+    ```ini
+    MONGO_URI=mongodb+srv://myuser:mypassword@cluster0.abcde.mongodb.net/libraease?retryWrites=true&w=majority
+    ```
+  </Step>
+
+  <Step title="Update backend/.env">
+    Paste the completed connection string as the value of `MONGO_URI` in `backend/.env`, then restart the backend server. You should see `MongoDB connected` in the terminal output.
+  </Step>
+</Steps>
+
+## Schema reference
+
+All three schemas are defined in `models/schema.js`.
+
+### `login` — users
+
+Collection name: `login`
+
+| Field | Type | Constraints | Description |
+|---|---|---|---|
+| `username` | `String` | Required, unique | Display name chosen at signup |
+| `email` | `String` | Required, unique | Used as the login identifier |
+| `password` | `String` | Required | bcrypt-hashed password |
+| `role` | `String` | Enum: `member`, `librarian`, `admin`; default: `member` | Determines access level |
+| `address` | `String` | Required | Street address of the member |
+| `pincode` | `String` | Required | Postal / ZIP code |
+| `phone` | `String` | Required | Contact phone number |
+
+<Note>
+  Both `username` and `email` have a unique index. Attempting to sign up with a duplicate username or email returns an error from the backend before the document is written.
+</Note>
+
+### `Book` — catalog
+
+Collection name: `Book`
+
+| Field | Type | Constraints | Description |
+|---|---|---|---|
+| `isbn` | `String` | Required, unique | International Standard Book Number |
+| `title` | `String` | Required | Book title |
+| `author` | `String` | Required | Author name |
+| `publisher` | `String` | Required | Publisher name |
+| `year` | `String` | Required | Year of publication |
+| `genre` | `String` | Required | Genre or category |
+| `quantity` | `Number` | Required | Number of copies available |
+| `images` | `String` | — | URL or path to cover image |
+| `createdBy` | `ObjectId` | Ref: `login` | ID of the librarian who added the book |
+
+<Note>
+  `isbn` has a unique index. Adding a book with a duplicate ISBN returns a duplicate key error. `createdBy` references the `login` collection, linking each book to the librarian account that created it.
+</Note>
+
+### `Checkout` — borrow records
+
+Collection name: `Checkout`
+
+**Top-level fields:**
+
+| Field | Type | Constraints | Description |
+|---|---|---|---|
+| `user` | `ObjectId` | Ref: `login` | The member who checked out the books |
+| `items` | `Array` | — | One entry per book in the checkout |
+
+**`items` subdocument fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `isbn` | `String` | ISBN of the checked-out book |
+| `quantity` | `Number` | Number of copies borrowed |
+| `checkoutDate` | `Date` | Date the book was borrowed |
+| `returnDate` | `Date` | Agreed return date selected at checkout |
+| `returned` | `Boolean` | `true` once the book has been returned |
+| `fines` | `Number` | Accumulated fine for overdue returns |
+
+## Local MongoDB setup
+
+If you are running MongoDB locally, install it for your platform from [mongodb.com/try/download/community](https://www.mongodb.com/try/download/community).
+
+Once installed, start the `mongod` process:
+
+```bash
+# macOS / Linux
+mongod --dbpath /data/db
+
+# Windows (run from MongoDB bin directory)
+mongod --dbpath C:\data\db
+```
+
+With `mongod` running, set your connection string to:
+
+```ini
+MONGO_URI=mongodb://localhost:27017/libraease
+```
+
+MongoDB will create the `libraease` database automatically the first time a document is written.

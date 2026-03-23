@@ -1,0 +1,114 @@
+---
+title: Book management
+description: How librarians add, update, and delete books, and how members browse the full catalog in LibraEase.
+---
+
+LibraEase separates book visibility by role. Librarians manage their own collection through a personal dashboard, while members can browse every book in the system.
+
+<Note>
+  Only users with the `librarian` role can add, edit, or delete books. Members have read-only access to the catalog.
+</Note>
+
+## Librarian vs. member views
+
+<Columns cols={2}>
+  <Card title="Librarian view" icon="shield">
+    Librarians see only the books they personally added (`createdBy` matches their user ID). They can add new books, update existing ones, and delete records from their `/dashboard` page.
+  </Card>
+  <Card title="Member view" icon="book-open">
+    Members see every book in the system regardless of which librarian added it. The catalog is read-only — members can browse and select books for checkout.
+  </Card>
+</Columns>
+
+## Book fields
+
+| Field | Type | Description |
+|---|---|---|
+| `isbn` | String (unique) | International Standard Book Number. Used as the primary identifier for update and delete operations. |
+| `title` | String | Full title of the book. |
+| `author` | String | Author name(s). |
+| `publisher` | String | Publishing house or organization. |
+| `year` | Number | Year of publication. |
+| `genre` | String | Category or genre (e.g., Fiction, Science, History). |
+| `quantity` | Number | Number of copies available in the library. |
+| `images` | Array | One or more image URLs for the book cover. |
+| `createdBy` | ObjectId | Reference to the librarian (`login` collection) who added the book. Set automatically on creation. |
+
+## CRUD operations
+
+### Add a book
+
+Librarians navigate to `/addbook` and fill in the book form. On submit, the frontend posts to the API, which creates a new document in the `books` collection with `createdBy` set to the logged-in librarian's user ID.
+
+```json
+POST /api/books/addbook
+
+{
+  "isbn": "978-0-06-112008-4",
+  "title": "To Kill a Mockingbird",
+  "author": "Harper Lee",
+  "publisher": "J. B. Lippincott & Co.",
+  "year": 1960,
+  "genre": "Fiction",
+  "quantity": 5,
+  "images": ["https://example.com/covers/mockingbird.jpg"]
+}
+```
+
+Success response:
+
+```json
+{ "message": "Book added successfully", "okk": true }
+```
+
+### View books
+
+<CodeGroup>
+
+```http Librarian — own books only
+GET /api/books/getbooks
+```
+
+```http Member — all books
+GET /api/books/getallbooks
+```
+
+</CodeGroup>
+
+Both endpoints return a `data` array of book documents:
+
+```json
+{ "data": [ { "isbn": "...", "title": "...", ... } ], "okk": true }
+```
+
+### Update a book
+
+Librarians navigate to `/updatebook` and search by ISBN. The form pre-fills with existing values. On submit, the backend finds the document by `isbn` and applies the changes using `$set`.
+
+```json
+PUT /api/books/updatebook
+
+{
+  "isbn": "978-0-06-112008-4",
+  "quantity": 8
+}
+```
+
+### Delete a book
+
+From the `/dashboard`, librarians can delete any book they own. The backend finds the document by `isbn` and removes it.
+
+```json
+DELETE /api/books/deletebook
+
+{ "isbn": "978-0-06-112008-4" }
+```
+
+## Frontend routes summary
+
+| Route | Role | Purpose |
+|---|---|---|
+| `/dashboard` | Librarian | View and delete books added by the logged-in librarian. |
+| `/addbook` | Librarian | Form to add a new book to the catalog. |
+| `/updatebook` | Librarian | Search by ISBN and edit book details. |
+| `/catalog` | Member | Browse all books and initiate checkout. |

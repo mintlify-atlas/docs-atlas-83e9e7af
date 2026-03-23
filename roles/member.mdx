@@ -1,0 +1,96 @@
+---
+title: Member role
+description: Everything a member can do in LibraEase — browsing the full book catalog, checking out books, and viewing borrow history.
+---
+
+Members are the primary users of LibraEase. They have read-only access to the complete book catalog and can check out books and review their borrowing history. Members cannot add, edit, or delete books.
+
+## Available frontend routes
+
+| Route | Description |
+|---|---|
+| `/dashboard` | Browse the full book catalog from all librarians. |
+| `/checkout` | Select books and submit a checkout request. |
+| `/checkoutdetails` | View current and past borrow records. |
+
+Routes that are not listed above (such as `/addbook` and `/updatebook`) redirect away for member accounts and are not accessible.
+
+## Available API endpoints
+
+All endpoints require a valid JWT sent in the request headers.
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/book/getallbooks` | POST | Return every book in the catalog, regardless of which librarian added it. |
+| `/book/checkout` | POST | Create a checkout record for the logged-in member. |
+| `/book/checkouttt` | POST | Return the checkout history for the logged-in member. |
+
+## Checkout flow
+
+When a member checks out a book, the backend creates a checkout record linked to `req.userId` and sends an email notification confirming the borrow details and the expected return date.
+
+**Checkout request body:**
+
+```json
+POST /book/checkout
+
+{
+  "bookIsbn": "978-0-06-112008-4",
+  "returnInDays": 14
+}
+```
+
+`returnInDays` is a number representing how many days from today the member intends to return the book. The backend calculates and stores the actual return date.
+
+After a successful checkout, an email notification is sent to the member's registered email address with the book title, borrow date, and return date.
+
+## Typical member workflow
+
+<Steps>
+  <Step title="Sign up as a member">
+    On the signup form, select `member` as your role (it is the default). Fill in the required fields: `username`, `email`, `password`, `address`, `pincode`, and `phone`.
+
+    After signing up, log in to receive your JWT. The token authenticates all subsequent requests.
+  </Step>
+
+  <Step title="Browse the catalog">
+    After logging in, you are directed to `/dashboard`. The frontend calls `POST /book/getallbooks` to load every available book from all librarians.
+
+    The response includes the full list of book records:
+
+    ```json
+    { "data": [ { "isbn": "...", "title": "...", "author": "...", "quantity": 3 } ], "okk": true }
+    ```
+
+    Browse by title, author, genre, or publisher to find books you want to borrow.
+  </Step>
+
+  <Step title="Check out books">
+    Navigate to `/checkout`. Select the books you want to borrow and set a return period in days.
+
+    On submit, the frontend posts to `POST /book/checkout`. The backend creates a checkout record under your user ID and dispatches a confirmation email to your registered address.
+
+    ```json
+    POST /book/checkout
+
+    {
+      "bookIsbn": "978-0-06-112008-4",
+      "returnInDays": 14
+    }
+    ```
+  </Step>
+
+  <Step title="View borrow details">
+    Navigate to `/checkoutdetails`. The frontend calls `POST /book/checkouttt` to load your complete checkout history, including current borrows and past returns.
+
+    Use this page to track your active loans and verify upcoming return dates.
+  </Step>
+</Steps>
+
+<Note>
+  Checkout confirmation emails are sent automatically after a successful `POST /book/checkout` call. Check your inbox — the email includes the book title, borrow date, and calculated return date.
+</Note>
+
+<Warning>
+  Checking out a book does not automatically decrement the book's `quantity` field in the current implementation. Contact the librarian if a book shown as available is not physically accessible.
+</Warning>

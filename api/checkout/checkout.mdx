@@ -1,0 +1,177 @@
+---
+title: 'Checkout books'
+description: 'Check out one or more books for a user and send an email confirmation.'
+---
+
+<Note>
+  This endpoint requires a valid JWT token passed in the `token` header.
+</Note>
+
+`POST /book/checkout`
+
+Checks out one or more books for the authenticated user. For each item, the `returnDate` is provided as a number of days from today and is stored as a `YYYY-MM-DD` date string. On success, an email notification is sent to the user.
+
+## Headers
+
+<ParamField header="token" type="string" required>
+  JWT token for the authenticated user.
+</ParamField>
+
+## Body
+
+<ParamField body="books" type="object[]" required>
+  Array of books to check out. Must contain at least one item.
+
+  <Expandable title="books item properties">
+    <ParamField body="isbn" type="string" required>
+      ISBN of the book to check out.
+    </ParamField>
+
+    <ParamField body="quantity" type="number" required>
+      Number of copies to check out. Must be at least `1`.
+    </ParamField>
+
+    <ParamField body="returnDate" type="number" required>
+      Number of days from today by which the book must be returned. Converted
+      internally to an ISO date string (`YYYY-MM-DD`) before being stored.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="alldetails" type="object[]" required>
+  Book metadata used to populate the confirmation email. One entry per book.
+
+  <Expandable title="alldetails item properties">
+    <ParamField body="title" type="string" required>
+      Title of the book.
+    </ParamField>
+
+    <ParamField body="author" type="string" required>
+      Author of the book.
+    </ParamField>
+
+    <ParamField body="isbn" type="string" required>
+      ISBN of the book.
+    </ParamField>
+
+    <ParamField body="checkoutDetails" type="object" required>
+      <Expandable title="checkoutDetails properties">
+        <ParamField body="quantity" type="number" required>
+          Number of copies being checked out.
+        </ParamField>
+
+        <ParamField body="days" type="number" required>
+          Loan duration in days (matches `returnDate` in the `books` array).
+        </ParamField>
+      </Expandable>
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string">
+  Confirmation message included when an email is sent successfully.
+</ResponseField>
+
+<ResponseField name="okk" type="boolean">
+  `true` when the checkout succeeds but no email confirmation is returned in
+  the response body.
+</ResponseField>
+
+### Error responses
+
+| Status | Description |
+| ------ | ----------- |
+| `400`  | `books` is missing, not an array, or empty. |
+| `401`  | Missing or invalid `token` header. |
+| `500`  | Unexpected server error. |
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  --url https://api.libraease.com/book/checkout \
+  --header 'Content-Type: application/json' \
+  --header 'token: <jwt-token>' \
+  --data '{
+  "books": [
+    {
+      "isbn": "978-0-06-112008-4",
+      "quantity": 1,
+      "returnDate": 14
+    },
+    {
+      "isbn": "978-0-7432-7356-5",
+      "quantity": 2,
+      "returnDate": 7
+    }
+  ],
+  "alldetails": [
+    {
+      "title": "To Kill a Mockingbird",
+      "author": "Harper Lee",
+      "isbn": "978-0-06-112008-4",
+      "checkoutDetails": { "quantity": 1, "days": 14 }
+    },
+    {
+      "title": "The Old Man and the Sea",
+      "author": "Ernest Hemingway",
+      "isbn": "978-0-7432-7356-5",
+      "checkoutDetails": { "quantity": 2, "days": 7 }
+    }
+  ]
+}'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.libraease.com/book/checkout', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'token': '<jwt-token>',
+  },
+  body: JSON.stringify({
+    books: [
+      { isbn: '978-0-06-112008-4', quantity: 1, returnDate: 14 },
+      { isbn: '978-0-7432-7356-5', quantity: 2, returnDate: 7 },
+    ],
+    alldetails: [
+      {
+        title: 'To Kill a Mockingbird',
+        author: 'Harper Lee',
+        isbn: '978-0-06-112008-4',
+        checkoutDetails: { quantity: 1, days: 14 },
+      },
+      {
+        title: 'The Old Man and the Sea',
+        author: 'Ernest Hemingway',
+        isbn: '978-0-7432-7356-5',
+        checkoutDetails: { quantity: 2, days: 7 },
+      },
+    ],
+  }),
+});
+
+const data = await response.json();
+```
+
+</CodeGroup>
+
+```json 201 — success with email
+{
+  "message": "Checkout successful. Confirmation email sent."
+}
+```
+
+```json 200 — success
+{
+  "okk": true
+}
+```
+
+```json 400 — invalid body
+{
+  "message": "Invalid books data"
+}
+```

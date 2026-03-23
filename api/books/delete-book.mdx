@@ -1,0 +1,123 @@
+---
+title: 'Delete book'
+description: 'Permanently remove a book from the library catalog by ISBN.'
+---
+
+Finds a book by its ISBN and permanently removes it from the catalog. The deleted book document is returned in the response.
+
+<Warning>
+  This action is irreversible. Once deleted, the book record cannot be recovered. Verify the ISBN before calling this endpoint.
+</Warning>
+
+## Authentication
+
+<Note>
+  This endpoint requires a valid JWT token passed in the request header as `token: <jwt-token>`. If the token is missing or invalid, the request will be rejected before reaching the controller.
+</Note>
+
+<ParamField header="token" type="string" required>
+  JWT token issued at login.
+</ParamField>
+
+## Request
+
+<ParamField body="id" type="string" required>
+  ISBN of the book to delete.
+</ParamField>
+
+## Response
+
+<ResponseField name="data" type="object">
+  The book document as it existed in the database immediately before deletion.
+
+  <Expandable title="Deleted book object properties">
+    <ResponseField name="isbn" type="string">
+      International Standard Book Number.
+    </ResponseField>
+    <ResponseField name="title" type="string">
+      Title of the book.
+    </ResponseField>
+    <ResponseField name="author" type="string">
+      Name of the book's author.
+    </ResponseField>
+    <ResponseField name="publisher" type="string">
+      Name of the publisher.
+    </ResponseField>
+    <ResponseField name="year" type="number">
+      Year the book was published.
+    </ResponseField>
+    <ResponseField name="genre" type="string">
+      Genre or category of the book.
+    </ResponseField>
+    <ResponseField name="quantity" type="number">
+      Number of copies that were available.
+    </ResponseField>
+    <ResponseField name="images" type="string[]">
+      Array of image URLs or base64-encoded strings.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="okk" type="boolean">
+  `true` if the operation succeeded, `false` if it failed.
+</ResponseField>
+
+## Code examples
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  --url https://api.libraease.com/book/deletebook \
+  --header 'token: <jwt-token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "id": "978-3-16-148410-0"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.libraease.com/book/deletebook', {
+  method: 'POST',
+  headers: {
+    'token': '<jwt-token>',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    id: '978-3-16-148410-0',
+  }),
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+## Response examples
+
+<CodeGroup>
+
+```json 200 Success
+{
+  "data": {
+    "isbn": "978-3-16-148410-0",
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "publisher": "Scribner",
+    "year": 1925,
+    "genre": "Fiction",
+    "quantity": 5,
+    "images": ["https://example.com/covers/great-gatsby.jpg"]
+  },
+  "okk": true
+}
+```
+
+```json 500 Server error
+{
+  "message": "Error deleting book"
+}
+```
+
+</CodeGroup>

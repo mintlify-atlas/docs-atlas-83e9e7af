@@ -1,0 +1,141 @@
+---
+title: 'Sign up'
+description: 'Register a new user account with a member or librarian role.'
+---
+
+Creates a new user account. All fields are required. The `role` field determines whether the user is registered as a `member` (borrowing access) or a `librarian` (catalog management access).
+
+<Note>
+  Passwords are hashed with bcrypt before storage. Plain-text passwords are never persisted.
+</Note>
+
+## Request
+
+<ParamField body="username" type="string" required>
+  Unique display name for the user.
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  User's email address. Must not already be registered. Stored in lowercase.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Account password. Must match `confirmpassword`.
+</ParamField>
+
+<ParamField body="confirmpassword" type="string" required>
+  Confirmation of the password. Must exactly match `password`.
+</ParamField>
+
+<ParamField body="role" type="string" required>
+  Account role. Accepted values: `member` or `librarian`.
+</ParamField>
+
+<ParamField body="address" type="string" required>
+  Street address for the user's account.
+</ParamField>
+
+<ParamField body="pincode" type="number" required>
+  Postal/ZIP code for the user's address.
+</ParamField>
+
+<ParamField body="phone" type="number" required>
+  Contact phone number.
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string" required>
+  Human-readable status message.
+</ResponseField>
+
+<ResponseField name="okk" type="boolean" required>
+  `true` when the account was created successfully; `false` for all error cases.
+</ResponseField>
+
+## Code examples
+
+<CodeGroup>
+
+```bash curl
+curl --request POST \
+  --url https://api.libraease.com/signup \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "username": "jsmith",
+    "email": "jsmith@example.com",
+    "password": "s3cur3P@ss",
+    "confirmpassword": "s3cur3P@ss",
+    "role": "member",
+    "address": "123 Main Street",
+    "pincode": 90210,
+    "phone": 5551234567
+  }'
+```
+
+```javascript fetch
+const response = await fetch('https://api.libraease.com/signup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    username: 'jsmith',
+    email: 'jsmith@example.com',
+    password: 's3cur3P@ss',
+    confirmpassword: 's3cur3P@ss',
+    role: 'member',
+    address: '123 Main Street',
+    pincode: 90210,
+    phone: 5551234567,
+  }),
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+## Response examples
+
+<CodeGroup>
+
+```json 200 Success
+{
+  "message": "Signed up Succesfully",
+  "okk": true
+}
+```
+
+```json 200 Email already registered
+{
+  "message": "There is existing email is there.",
+  "okk": false
+}
+```
+
+```json 200 Password mismatch
+{
+  "message": "password does not match",
+  "okk": false
+}
+```
+
+```json 200 Missing required field
+{
+  "message": "field is missing",
+  "okk": false
+}
+```
+
+```json 400 Server error
+{
+  "message": "error",
+  "okk": false
+}
+```
+
+</CodeGroup>
+
+<Warning>
+  All failure cases except server errors return HTTP `200`. Check the `okk` field to determine whether the request succeeded.
+</Warning>

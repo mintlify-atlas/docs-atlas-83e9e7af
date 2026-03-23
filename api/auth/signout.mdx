@@ -1,0 +1,47 @@
+---
+title: 'Sign out'
+description: 'Expire the session cookie and end the current user session.'
+---
+
+Expires the `token` cookie by setting it to an empty string with a past expiry date. No request body is required. After calling this endpoint, the browser will no longer send the session cookie with subsequent requests.
+
+<Note>
+  This endpoint does not require authentication. It simply clears the cookie regardless of its current value.
+</Note>
+
+## Request
+
+No request body or headers are required.
+
+## Response
+
+Returns the plain string `"sign outed"` with HTTP `200`.
+
+## Code examples
+
+<CodeGroup>
+
+```bash curl
+curl --request POST \
+  --url https://api.libraease.com/signout \
+  --cookie-jar cookies.txt \
+  --cookie cookies.txt
+```
+
+```javascript fetch
+const response = await fetch('https://api.libraease.com/signout', {
+  method: 'POST',
+  credentials: 'include', // required to clear the cookie
+});
+
+const message = await response.json();
+console.log(message); // "sign outed"
+```
+
+</CodeGroup>
+
+## Response example
+
+```json 200 Success
+"sign outed"
+```

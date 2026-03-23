@@ -1,0 +1,89 @@
+---
+title: Checkout
+description: How members borrow books in LibraEase, including return dates, fine tracking, and the confirmation email that is sent on checkout.
+---
+
+Members can borrow one or more books in a single checkout session. The backend records each item's quantity and expected return date, and sends a confirmation email immediately after the checkout is saved.
+
+## Checkout flow
+
+<Steps>
+  <Step title="Browse the catalog">
+    Members open the book catalog, which lists every book in the system with its available quantity. Members select the books they want to borrow and specify how many copies of each they need.
+  </Step>
+
+  <Step title="Set a return date">
+    For each book, the member enters a return date as a **number of days from today**. The frontend sends this number to the API; the backend converts it to a concrete ISO date string before saving.
+
+    For example, entering `14` means the book is due back 14 days from the checkout date.
+  </Step>
+
+  <Step title="Submit the checkout request">
+    The frontend posts the checkout request with the full list of items:
+
+    ```json
+    POST /api/books/checkout
+
+    {
+      "books": [
+        { "isbn": "978-0-06-112008-4", "quantity": 1, "returnDate": 14 },
+        { "isbn": "978-0-7432-7356-5", "quantity": 2, "returnDate": 7 }
+      ]
+    }
+    ```
+  </Step>
+
+  <Step title="Backend saves the checkout record">
+    The API creates or updates a `checkout` document for the logged-in user. Each item in the `items` array records:
+
+    - `isbn` — which book was borrowed
+    - `quantity` — how many copies
+    - `checkoutDate` — the current date (set automatically)
+    - `returnDate` — the ISO date derived from the days value provided
+    - `returned` — `false` by default; set to `true` when the member returns the book
+    - `fines` — `0` by default; updated if the book is returned late
+  </Step>
+
+  <Step title="Confirmation email is sent">
+    After the checkout record is saved, the backend immediately sends a confirmation email to the member via Nodemailer. The email lists all borrowed books in a formatted table. See [Email notifications](/features/email-notifications) for details.
+  </Step>
+</Steps>
+
+## Checkout schema
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `user` | ObjectId | — | Reference to the member in the `login` collection. |
+| `items[].isbn` | String | — | ISBN of the borrowed book. |
+| `items[].quantity` | Number | — | Number of copies borrowed. |
+| `items[].checkoutDate` | Date | — | Date the checkout was created. |
+| `items[].returnDate` | Date | — | Due date, derived from the days value sent by the frontend. |
+| `items[].returned` | Boolean | `false` | Marks the item as returned once the member brings the book back. |
+| `items[].fines` | Number | `0` | Fine amount accrued for late returns. Updated by the librarian or an automated process. |
+
+## Return date conversion
+
+The frontend sends `returnDate` as a plain integer (number of days). The backend converts it before saving:
+
+```js
+// Backend conversion (controllers/book.js)
+const returnDate = new Date();
+returnDate.setDate(returnDate.getDate() + item.returnDate);
+// returnDate is now saved as an ISO date string
+```
+
+This means the API never receives or stores raw day counts — only concrete dates.
+
+## Viewing all checkouts
+
+Librarians can retrieve every checkout record in the system:
+
+```http
+GET /api/books/checkouttt
+```
+
+```json
+{ "data": [ { "user": "...", "items": [ ... ] } ] }
+```
+
+This endpoint is used by the librarian dashboard to track which books are currently out, identify overdue items, and update `returned` or `fines` fields.

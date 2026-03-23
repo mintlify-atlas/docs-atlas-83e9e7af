@@ -1,0 +1,70 @@
+---
+title: Roles & permissions overview
+description: An overview of the three roles in LibraEase — member, librarian, and admin — including what each role can access and do.
+---
+
+LibraEase uses a role-based access control system. Every user account has a single role that determines which pages they can visit, which API endpoints they can call, and what actions they can take.
+
+The role is assigned at signup and cannot be changed through the UI.
+
+## Available roles
+
+| Role | Description |
+|---|---|
+| `member` | Default role. Can browse the full book catalog and check out books. |
+| `librarian` | Can add, update, and delete books from their own collection. |
+| `admin` | Reserved for future use. Not assignable through the public signup form. |
+
+<Warning>
+  The `admin` role exists in the database schema but is not yet implemented. It cannot be selected during signup and grants no additional access in the current version.
+</Warning>
+
+## Permissions comparison
+
+| Permission | `member` | `librarian` | `admin` |
+|---|---|---|---|
+| Dashboard access | Yes | Yes | — |
+| Browse full book catalog | Yes | No | — |
+| Check out books | Yes | No | — |
+| View checkout history | Yes | No | — |
+| Add books | No | Yes | — |
+| Update books | No | Yes | — |
+| Delete books | No | Yes | — |
+| View own book collection | No | Yes | — |
+
+## How role is assigned
+
+During signup, users select either `member` or `librarian`. The backend validates that only these two values are accepted:
+
+```js
+// controllers/login.js
+if (req.body.role == "member" || req.body.role == "librarian") {
+  // proceed with account creation
+}
+```
+
+The role is stored in the `login` collection on the `role` field and embedded in the JWT payload on login. The frontend reads the role from the `/email` endpoint to render the correct UI.
+
+```js
+// models/schema.js
+role: {
+  type: String,
+  enum: ["member", "librarian", "admin"],
+  default: "member",
+}
+```
+
+<Note>
+  Because role is embedded in the JWT, changing a user's role in the database requires them to sign out and log back in before the updated role takes effect on the frontend.
+</Note>
+
+## Role detail pages
+
+<CardGroup cols={2}>
+  <Card title="Librarian" icon="shield" href="/roles/librarian">
+    Learn about the librarian workflow: adding books, updating records, and managing your catalog.
+  </Card>
+  <Card title="Member" icon="book-open" href="/roles/member">
+    Learn about the member workflow: browsing the catalog, checking out books, and viewing borrow history.
+  </Card>
+</CardGroup>

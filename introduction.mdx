@@ -1,0 +1,70 @@
+---
+title: Introduction
+description: Welcome to LibraEase — a full-stack library management system for librarians and members.
+---
+
+# LibraEase
+
+LibraEase is a full-stack library management system that makes it easy to catalog books, manage member checkouts, and send automated email notifications. It provides role-based access so librarians can manage the collection while members can browse and borrow books.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get LibraEase running locally in minutes
+  </Card>
+  <Card title="Book Management" icon="book" href="/features/book-management">
+    Add, update, and delete books in the catalog
+  </Card>
+  <Card title="Checkout System" icon="cart-shopping" href="/features/checkout">
+    Let members borrow books with due dates
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/auth/signup">
+    Explore the full REST API
+  </Card>
+</CardGroup>
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Role-based access" icon="users">
+    Separate workflows for librarians and members, with protected routes enforced on both frontend and backend.
+  </Card>
+  <Card title="Book catalog" icon="books">
+    Full CRUD for books — add new titles, update metadata, remove outdated entries, and search the full catalog.
+  </Card>
+  <Card title="Checkout & returns" icon="calendar-check">
+    Members select books, choose a return date, and the system records the checkout with automatic due-date tracking.
+  </Card>
+  <Card title="Email notifications" icon="envelope">
+    Automated HTML emails sent to members on checkout using Nodemailer and Mailgen.
+  </Card>
+  <Card title="JWT authentication" icon="lock">
+    Secure login with JSON Web Tokens stored in HTTP-only cookies and verified by server-side middleware.
+  </Card>
+  <Card title="MongoDB persistence" icon="database">
+    Mongoose schemas for users, books, and checkouts with full relational references between collections.
+  </Card>
+</CardGroup>
+
+## Architecture overview
+
+LibraEase is split into two independent applications:
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18 + Vite, Material UI, React Router v6 |
+| Backend | Node.js + Express, JWT auth, Nodemailer |
+| Database | MongoDB via Mongoose ODM |
+
+The backend exposes a REST API that the React frontend consumes. Authentication uses JWT tokens passed via HTTP-only cookies or request headers.
+
+## User roles
+
+LibraEase supports three roles:
+
+- **Librarian** — can add, update, and delete books; view all checkouts
+- **Member** — can browse the full catalog, check out books, and view their own borrow history
+- **Admin** — reserved for future administrative features
+
+<Note>
+  Role assignment happens at signup. Each user selects either `member` or `librarian` during registration.
+</Note>

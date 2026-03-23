@@ -1,0 +1,146 @@
+---
+title: 'Get all checkout records'
+description: 'Retrieve every checkout record in the system, including user references and all item-level details.'
+---
+
+<Note>
+  This endpoint requires a valid JWT token passed in the `token` header.
+</Note>
+
+`POST /book/checkouttt`
+
+Returns all checkout records stored in the database. Each record includes a reference to the user who performed the checkout and an array of item-level details such as return dates, fine amounts, and return status.
+
+<Warning>
+  This endpoint returns records for all users, not just the authenticated user.
+  Restrict access to administrative roles in production.
+</Warning>
+
+## Headers
+
+<ParamField header="token" type="string" required>
+  JWT token for the authenticated user.
+</ParamField>
+
+## Body
+
+No request body is required.
+
+## Response
+
+<ResponseField name="data" type="object[]">
+  Array of all checkout records.
+
+  <Expandable title="Checkout object properties">
+    <ResponseField name="_id" type="string" required>
+      Unique MongoDB identifier for the checkout record.
+    </ResponseField>
+
+    <ResponseField name="user" type="string" required>
+      ObjectId reference to the `User` who performed the checkout.
+    </ResponseField>
+
+    <ResponseField name="items" type="object[]" required>
+      Array of individual book items included in this checkout.
+
+      <Expandable title="item properties">
+        <ResponseField name="isbn" type="string" required>
+          ISBN of the checked-out book.
+        </ResponseField>
+
+        <ResponseField name="quantity" type="number" required>
+          Number of copies checked out. Minimum value is `1`.
+        </ResponseField>
+
+        <ResponseField name="checkoutDate" type="string" required>
+          ISO 8601 date-time string recording when the item was checked out.
+          Defaults to the time the record was created.
+        </ResponseField>
+
+        <ResponseField name="returnDate" type="string" required>
+          ISO 8601 date string (`YYYY-MM-DD`) by which the item must be
+          returned. Derived from the `returnDate` (days) value supplied at
+          checkout time.
+        </ResponseField>
+
+        <ResponseField name="returned" type="boolean">
+          Whether the item has been returned. Defaults to `false`.
+        </ResponseField>
+
+        <ResponseField name="fines" type="number">
+          Outstanding fine amount for this item in the system's base currency
+          unit. Defaults to `0`. Minimum value is `0`.
+        </ResponseField>
+
+        <ResponseField name="_id" type="string">
+          Unique MongoDB identifier for this item subdocument.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Error responses
+
+| Status | Description |
+| ------ | ----------- |
+| `401`  | Missing or invalid `token` header. |
+| `500`  | Database error while retrieving records. |
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  --url https://api.libraease.com/book/checkouttt \
+  --header 'token: <jwt-token>'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.libraease.com/book/checkouttt', {
+  method: 'POST',
+  headers: {
+    'token': '<jwt-token>',
+  },
+});
+
+const data = await response.json();
+```
+
+</CodeGroup>
+
+```json 200 — success
+{
+  "data": [
+    {
+      "_id": "664a1f2e3c4b5d6e7f8a9b0c",
+      "user": "663f0a1b2c3d4e5f6a7b8c9d",
+      "items": [
+        {
+          "_id": "664a1f2e3c4b5d6e7f8a9b0d",
+          "isbn": "978-0-06-112008-4",
+          "quantity": 1,
+          "checkoutDate": "2026-03-20T10:15:00.000Z",
+          "returnDate": "2026-04-03",
+          "returned": false,
+          "fines": 0
+        },
+        {
+          "_id": "664a1f2e3c4b5d6e7f8a9b0e",
+          "isbn": "978-0-7432-7356-5",
+          "quantity": 2,
+          "checkoutDate": "2026-03-20T10:15:00.000Z",
+          "returnDate": "2026-03-27",
+          "returned": false,
+          "fines": 0
+        }
+      ]
+    }
+  ]
+}
+```
+
+```json 500 — server error
+{
+  "message": "Error during checkout"
+}
+```
